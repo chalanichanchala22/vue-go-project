@@ -167,7 +167,7 @@ const getMaxDate = () => {
 }
 
 const viewUserDetails = () => {
-  // Navigate to userlist view
+  // Navigate to user list view
   router.push('/userlist')
 }
 

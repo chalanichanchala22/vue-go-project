@@ -6,7 +6,7 @@ const routes = [
   { path: '/', redirect: '/users' },
   { path: '/users', component: UsersView },
   { path: '/users/:id', component: UserDetailView },
-
+  { path: '/userlist', component: () => import('../views/UserListView.vue') }
 ]
 
 const router = createRouter({
