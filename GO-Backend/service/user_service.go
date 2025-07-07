@@ -26,12 +26,8 @@ func (s *UserService) CreateUser(user *model.User) error {
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
 		return err
 	}
-	for _, phoneID := range user.PhoneIDs {
-		phone := &model.PhoneNumber{UserID: user.ID, ID: phoneID}
-		if err := s.phoneRepo.CreatePhone(ctx, phone); err != nil {
-			return err
-		}
-	}
+	// Note: Phone numbers are created separately via the phone endpoints
+	// No need to create phones here since user.PhoneIDs will be empty for new users
 	return nil
 }
 

@@ -22,8 +22,13 @@ func NewPhoneRepository(db *mongo.Database) *PhoneRepository {
 }
 
 func (r *PhoneRepository) CreatePhone(ctx context.Context, phone *model.PhoneNumber) error {
-	_, err := r.collection.InsertOne(ctx, phone)
-	return err
+	result, err := r.collection.InsertOne(ctx, phone)
+	if err != nil {
+		return err
+	}
+	// Set the generated ObjectID back to the phone struct
+	phone.ID = result.InsertedID.(primitive.ObjectID)
+	return nil
 }
 
 func (r *PhoneRepository) FindPhoneByID(ctx context.Context, id primitive.ObjectID) (*model.PhoneNumber, error) {

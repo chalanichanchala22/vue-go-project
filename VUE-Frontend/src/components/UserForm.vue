@@ -83,7 +83,7 @@
                 type="tel"
                 placeholder="Enter phone number"
                 pattern="[0-9+\-\s()]*"
-                maxlength="15"
+                maxlength="10"
               />
             </div>
             <div class="form-group">
