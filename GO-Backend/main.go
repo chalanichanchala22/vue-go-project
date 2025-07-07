@@ -1,18 +1,22 @@
 package main
 
 import (
+	"fmt"
 	"go-fiber-app/config"
 	"go-fiber-app/handler"
 	"go-fiber-app/repository"
 	"go-fiber-app/routes"
 	"go-fiber-app/service"
 	"go-fiber-app/utils"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
+	fmt.Println("Starting Go Backend Server...")
+
 	utils.LoadEnv()
 	config.ConnectDB()
 
@@ -42,8 +46,8 @@ func main() {
 
 	// API routes with prefix
 	api := app.Group("/api")
-	routes.RegisterUserRoutes(api, userHandler)
-	routes.RegisterPhoneRoutes(api, phoneHandler)
+	routes.RegisterRoutes(api, userHandler, phoneHandler)
 
-	app.Listen(":8080")
+	fmt.Println("Server starting on :8080...")
+	log.Fatal(app.Listen(":8080"))
 }

@@ -48,6 +48,19 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
+func (h *UserHandler) GetUserWithPhones(c *fiber.Ctx) error {
+	id := c.Params("id")
+	userID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
+	}
+	userWithPhones, err := h.userService.GetUserWithPhones(userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+	}
+	return c.JSON(userWithPhones)
+}
+
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID, err := primitive.ObjectIDFromHex(id)

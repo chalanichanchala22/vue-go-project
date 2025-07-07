@@ -41,6 +41,36 @@ func (s *UserService) GetUser(id primitive.ObjectID) (*model.User, error) {
 	return s.userRepo.FindUserByID(ctx, id)
 }
 
+func (s *UserService) GetUserWithPhones(id primitive.ObjectID) (*model.UserWithPhones, error) {
+	ctx := context.Background()
+
+	// Get the user
+	user, err := s.userRepo.FindUserByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the user's phones
+	phones, err := s.phoneRepo.GetPhonesByUser(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create UserWithPhones struct
+	userWithPhones := &model.UserWithPhones{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		NIC:      user.NIC,
+		Address:  user.Address,
+		Birthday: user.Birthday,
+		Gender:   user.Gender,
+		Phones:   phones,
+	}
+
+	return userWithPhones, nil
+}
+
 func (s *UserService) UpdateUser(user *model.User) error {
 	ctx := context.Background()
 	if err := s.userRepo.UpdateUser(ctx, user); err != nil {

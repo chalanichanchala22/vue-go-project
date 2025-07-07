@@ -51,14 +51,50 @@ func (h *PhoneHandler) GetPhonesByUser(c *fiber.Ctx) error {
 
 // GetPhone handles GET /users/:userId/phones/:id
 func (h *PhoneHandler) GetPhone(c *fiber.Ctx) error {
-	// TODO: Implement logic to retrieve a specific phone by userId and id
-	return c.SendStatus(fiber.StatusNotImplemented)
+	userID, err := primitive.ObjectIDFromHex(c.Params("userId"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
+	}
+
+	phoneID, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid phone ID"})
+	}
+
+	phone, err := h.phoneService.GetPhone(userID, phoneID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if phone == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Phone not found"})
+	}
+
+	return c.JSON(phone)
 }
 
 // UpdatePhone updates a specific phone for a user.
 func (h *PhoneHandler) UpdatePhone(c *fiber.Ctx) error {
-	// TODO: Implement the update logic here
-	return c.SendStatus(fiber.StatusNotImplemented)
+	userID, err := primitive.ObjectIDFromHex(c.Params("userId"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
+	}
+
+	phoneID, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid phone ID"})
+	}
+
+	var updatedPhone model.PhoneNumber
+	if err := c.BodyParser(&updatedPhone); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := h.phoneService.UpdatePhone(userID, phoneID, &updatedPhone); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Phone updated successfully", "phone": updatedPhone})
 }
 
 // DeletePhone deletes a specific phone by ID for a user.

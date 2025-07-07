@@ -16,7 +16,7 @@
           </div>
           <div class="phone-details">
             <span class="phone-number">{{ formatPhoneNumber(phone.number) }}</span>
-            <span class="phone-id">ID: {{ phone.id }}</span>
+           
           </div>
         </div>
         
