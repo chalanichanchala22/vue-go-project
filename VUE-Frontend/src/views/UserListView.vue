@@ -16,7 +16,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import UserList from '../components/UserList.vue'
+import UserList from '../components/UserDetails.vue'
 import { getUsers } from '../services/userService'
 
 const router = useRouter()

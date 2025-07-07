@@ -6,16 +6,33 @@
     <div v-else class="users-grid">
       <div v-for="userWithPhones in usersWithPhones" :key="userWithPhones.user.id" class="user-card">
         <div class="user-info">
-          <h3 class="user-name">{{ userWithPhones.user.name }}</h3>
-          <p class="user-email">{{ userWithPhones.user.email }}</p>
+          <div class="user-details">
+            <h3 class="user-name">{{ userWithPhones.user.name }}</h3>
+            <p class="user-email">{{ userWithPhones.user.email }}</p>
+          </div>
+          <div class="user-edit-actions">
+            <button @click="editUserProfile(userWithPhones.user)" class="btn-profile btn-edit-profile">
+              ✏️
+            </button>
+          </div>
         </div>
         
         <div class="phone-numbers">
           <h4>Phone Numbers:</h4>
           <div v-if="userWithPhones.phones && userWithPhones.phones.length > 0" class="phones-list">
             <div v-for="phone in userWithPhones.phones" :key="phone.id" class="phone-item">
-              <span class="phone-number">{{ phone.number }}</span>
-              <span class="phone-type">{{ phone.type }}</span>
+              <div class="phone-info">
+                <span class="phone-number">{{ phone.number }}</span>
+                <span class="phone-type">{{ phone.type }}</span>
+              </div>
+              <div class="phone-actions">
+                <button @click="editPhone(userWithPhones.user.id, phone)" class="btn-phone btn-edit">
+                  ✏️
+                </button>
+                <button @click="deletePhone(userWithPhones.user.id, phone.id)" class="btn-phone btn-delete">
+                  🗑️
+                </button>
+              </div>
             </div>
           </div>
           <div v-else class="no-phones">
@@ -27,6 +44,9 @@
           <router-link :to="`/users/${userWithPhones.user.id}`" class="btn btn-primary">
             View Details
           </router-link>
+          <button @click="edit(userWithPhones.user)" class="btn btn-success">
+            Edit
+          </button>
           <button @click="del(userWithPhones.user.id)" class="btn btn-danger">
             Delete
           </button>
@@ -38,8 +58,30 @@
 
 <script setup>
 import { deleteUser } from '../services/userService'
+import { deletePhone as deletePhoneService } from '../services/phoneService'
 const props = defineProps(['usersWithPhones'])
-const emit = defineEmits(['deleted'])
+const emit = defineEmits(['deleted', 'edit', 'phoneEdit', 'phoneDeleted', 'userProfileEdit'])
+
+const edit = (user) => {
+  emit('edit', user)
+}
+
+const editUserProfile = (user) => {
+  emit('userProfileEdit', user)
+}
+
+const editPhone = (userId, phone) => {
+  emit('phoneEdit', { userId, phone })
+}
+
+const deletePhone = async (userId, phoneId) => {
+  try {
+    await deletePhoneService(userId, phoneId)
+    emit('phoneDeleted')
+  } catch (error) {
+    console.error('Error deleting phone:', error)
+  }
+}
 
 const del = async (id) => {
   await deleteUser(id)
@@ -81,6 +123,41 @@ const del = async (id) => {
 
 .user-info {
   margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-edit-actions {
+  margin-left: 0.5rem;
+}
+
+.btn-profile {
+  padding: 0.3rem;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-profile {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-edit-profile:hover {
+  background-color: #138496;
+  transform: scale(1.1);
 }
 
 .user-name {
@@ -119,6 +196,53 @@ const del = async (id) => {
   background-color: #fff;
   border-radius: 4px;
   border: 1px solid #e0e0e0;
+}
+
+.phone-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+}
+
+.phone-actions {
+  display: flex;
+  gap: 0.3rem;
+  margin-left: 0.5rem;
+}
+
+.btn-phone {
+  padding: 0.3rem;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: #218838;
+  transform: scale(1.1);
+}
+
+.btn-delete {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+  transform: scale(1.1);
 }
 
 .phone-number {
@@ -166,6 +290,15 @@ const del = async (id) => {
 
 .btn-primary:hover {
   background-color: #0056b3;
+}
+
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #218838;
 }
 
 .btn-danger {

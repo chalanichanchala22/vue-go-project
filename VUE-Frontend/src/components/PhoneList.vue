@@ -15,21 +15,69 @@
             <i class="icon-phone"></i>
           </div>
           <div class="phone-details">
-            <span class="phone-number">{{ formatPhoneNumber(phone.number) }}</span>
-           
+            <div v-if="editingPhone === phone.id" class="phone-edit-form">
+              <input 
+                v-model="editForm.number" 
+                type="text" 
+                placeholder="Phone Number"
+                class="phone-input"
+                @keyup.enter="saveEdit(phone.id)"
+                @keyup.escape="cancelEdit()"
+                ref="phoneInput"
+              />
+              <select v-model="editForm.type" class="type-select">
+                <option value="home">Home</option>
+                <option value="work">Work</option>
+                <option value="mobile">Mobile</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div v-else class="phone-display">
+              <span class="phone-number">{{ formatPhoneNumber(phone.number) }}</span>
+              <span class="phone-type">{{ phone.type }}</span>
+            </div>
           </div>
         </div>
         
         <div class="phone-actions">
-          <button 
-            @click="del(phone.id)" 
-            class="delete-btn"
-            :disabled="deleting === phone.id"
-          >
-            <i v-if="deleting === phone.id" class="icon-loading"></i>
-            <i v-else class="icon-trash"></i>
-            {{ deleting === phone.id ? 'Deleting...' : 'Delete' }}
-          </button>
+          <div v-if="editingPhone === phone.id" class="edit-actions">
+            <button 
+              @click="saveEdit(phone.id)" 
+              class="save-btn"
+              :disabled="updating === phone.id"
+            >
+              <i v-if="updating === phone.id" class="icon-loading"></i>
+              <i v-else class="icon-save"></i>
+              {{ updating === phone.id ? 'Saving...' : 'Save' }}
+            </button>
+            <button 
+              @click="cancelEdit()" 
+              class="cancel-btn"
+              :disabled="updating === phone.id"
+            >
+              <i class="icon-cancel"></i>
+              Cancel
+            </button>
+          </div>
+          <div v-else class="view-actions">
+            <button 
+              @click="startEdit(phone)" 
+              class="edit-btn"
+              :disabled="deleting === phone.id"
+            >
+              <i class="icon-edit"></i>
+              Edit
+            </button>
+            <button 
+              @click="del(phone.id)" 
+              class="delete-btn"
+              :disabled="deleting === phone.id"
+            >
+              <i v-if="deleting === phone.id" class="icon-loading"></i>
+              <i v-else class="icon-trash"></i>
+              {{ deleting === phone.id ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -37,12 +85,68 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { deletePhone } from '../services/phoneService'
+import { ref, nextTick } from 'vue'
+import { deletePhone, updatePhone } from '../services/phoneService'
 
 const props = defineProps(['phones', 'userId'])
-const emit = defineEmits(['deleted'])
+const emit = defineEmits(['deleted', 'edit', 'updated'])
 const deleting = ref(null)
+const updating = ref(null)
+const editingPhone = ref(null)
+const editForm = ref({
+  number: '',
+  type: ''
+})
+
+const edit = (phone) => {
+  emit('edit', phone)
+}
+
+const startEdit = (phone) => {
+  editingPhone.value = phone.id
+  editForm.value = {
+    number: phone.number,
+    type: phone.type
+  }
+  
+  // Focus the input after the DOM updates
+  nextTick(() => {
+    const input = document.querySelector('.phone-input')
+    if (input) input.focus()
+  })
+}
+
+const cancelEdit = () => {
+  editingPhone.value = null
+  editForm.value = {
+    number: '',
+    type: ''
+  }
+}
+
+const saveEdit = async (phoneId) => {
+  try {
+    updating.value = phoneId
+    console.log('Updating phone:', phoneId, 'with data:', editForm.value)
+    const response = await updatePhone(props.userId, phoneId, editForm.value)
+    console.log('Update response:', response)
+    editingPhone.value = null
+    editForm.value = {
+      number: '',
+      type: ''
+    }
+    emit('updated')
+    console.log('Update completed, emitted updated event')
+  } catch (error) {
+    console.error('Error updating phone:', error)
+    if (error.response) {
+      console.error('Response data:', error.response.data)
+      console.error('Response status:', error.response.status)
+    }
+  } finally {
+    updating.value = null
+  }
+}
 
 const del = async (phoneId) => {
   try {
@@ -125,12 +229,52 @@ const formatPhoneNumber = (number) => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+}
+
+.phone-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.phone-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phone-input, .type-select {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.phone-input {
+  font-weight: 600;
+}
+
+.phone-input:focus, .type-select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
 .phone-number {
   font-size: 16px;
   font-weight: 600;
   color: #2c3e50;
+}
+
+.phone-type {
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  background: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 10px;
+  align-self: flex-start;
 }
 
 .phone-id {
@@ -141,6 +285,93 @@ const formatPhoneNumber = (number) => {
 .phone-actions {
   display: flex;
   gap: 8px;
+}
+
+.edit-actions, .view-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.save-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cancel-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.edit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.edit-btn:active {
+  transform: translateY(0);
 }
 
 .delete-btn {
@@ -175,6 +406,9 @@ const formatPhoneNumber = (number) => {
 
 /* Icons */
 .icon-phone::before { content: '📞'; }
+.icon-edit::before { content: '✏️'; }
+.icon-save::before { content: '💾'; }
+.icon-cancel::before { content: '❌'; }
 .icon-trash::before { content: '🗑️'; }
 .icon-loading::before { 
   content: '⟳'; 

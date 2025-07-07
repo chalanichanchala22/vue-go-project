@@ -65,7 +65,7 @@
       </div>
       
       <div class="phones-container">
-        <PhoneList :phones="phones" :userId="userId" @deleted="loadPhones" />
+        <PhoneList :phones="phones" :userId="userId" @deleted="loadPhones" @updated="loadPhones" />
       </div>
     </div>
 
