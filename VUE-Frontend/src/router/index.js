@@ -5,7 +5,8 @@ import UserDetailView from '../views/UserDetailView.vue'
 const routes = [
   { path: '/', redirect: '/users' },
   { path: '/users', component: UsersView },
-  { path: '/users/:id', component: UserDetailView }
+  { path: '/users/:id', component: UserDetailView },
+
 ]
 
 const router = createRouter({

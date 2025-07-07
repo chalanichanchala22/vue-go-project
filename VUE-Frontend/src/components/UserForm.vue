@@ -117,10 +117,15 @@
         <div v-if="errorMessage" class="error-message">
           {{ errorMessage }}
         </div>
-        <button type="submit" class="btn-primary" :disabled="isLoading">
-          <span v-if="isLoading">Adding User...</span>
-          <span v-else>Add User</span>
-        </button>
+        <div class="button-group">
+          <button type="submit" class="btn-primary" :disabled="isLoading">
+            <span v-if="isLoading">Adding User...</span>
+            <span v-else>Add User</span>
+          </button>
+          <button type="button" class="btn-secondary" @click="viewUserDetails">
+            View User Details
+          </button>
+        </div>
       </div>
     </form>
   </div>
@@ -128,10 +133,13 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { createUser } from '../services/userService'
 import { createPhone } from '../services/phoneService'
 
-const emit = defineEmits(['refresh'])
+const emit = defineEmits(['refresh', 'viewUserDetails'])
+const router = useRouter()
+
 const user = ref({
   name: '', email: '', nic: '', address: '', birthday: '', gender: ''
 })
@@ -156,6 +164,11 @@ const removePhone = (index) => {
 const getMaxDate = () => {
   const today = new Date()
   return today.toISOString().split('T')[0]
+}
+
+const viewUserDetails = () => {
+  // Navigate to userlist view
+  router.push('/userlist')
 }
 
 const submit = async () => {
@@ -357,6 +370,34 @@ const submit = async () => {
   transform: translateY(1px);
 }
 
+.button-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  min-width: 120px;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.btn-secondary:active {
+  transform: translateY(1px);
+}
+
 /* Phone Numbers Section */
 .phone-section {
   border: 1px solid #e0e0e0;
@@ -428,6 +469,16 @@ const submit = async () => {
   
   .form-row {
     grid-template-columns: 1fr;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    max-width: 300px;
   }
 }
 </style>
