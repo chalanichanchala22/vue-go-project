@@ -14,10 +14,12 @@
     <div class="user-card">
       <div class="user-header">
         <div class="user-avatar">
-          <div class="avatar-placeholder">
+          <img v-if="user.photo" :src="'http://localhost:8080' + user.photo" alt="User Photo" class="avatar-img"/>
+          <div v-else class="avatar-placeholder">
             <i class="icon-user"></i>
           </div>
         </div>
+
         <div class="user-title">
           <h2 class="user-name">{{ user.name || `User #${userId}` }}</h2>
           <p class="user-subtitle">User Profile</p>
@@ -236,10 +238,7 @@ const formatDate = (dateString) => {
 // Phone management functions
 const addPhone = async () => {
   try {
-    await createPhone({
-      ...newPhone,
-      user_id: userId
-    })
+    await createPhone(userId, newPhone)
     await loadPhones()
     cancelAdd()
   } catch (error) {
@@ -359,6 +358,22 @@ onMounted(() => {
   justify-content: center;
   font-size: 32px;
   backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .user-title h2 {

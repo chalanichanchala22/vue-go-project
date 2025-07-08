@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(r fiber.Router, userHandler *handler.UserHandler) {
+func RegisterRoutes(r fiber.Router, userHandler *handler.UserHandler, phoneHandler *handler.PhoneHandler) {
 	// User routes
 	r.Get("/users", userHandler.GetAllUsers)
 	r.Post("/users", userHandler.CreateUser)
@@ -14,6 +14,12 @@ func RegisterRoutes(r fiber.Router, userHandler *handler.UserHandler) {
 	r.Get("/users/:id/details", userHandler.GetUser)
 	r.Put("/users/:id", userHandler.UpdateUser)
 	r.Delete("/users/:id", userHandler.DeleteUser)
+
+	// Phone routes
+	r.Get("/users/:id/phones", phoneHandler.GetPhonesByUser)
+	r.Post("/users/:id/phones", phoneHandler.CreatePhone)
+	r.Put("/users/:id/phones/:phoneId", phoneHandler.UpdatePhone)
+	r.Delete("/users/:id/phones/:phoneId", phoneHandler.DeletePhone)
 
 	// Test route for file upload debugging
 	r.Post("/test-upload", func(c *fiber.Ctx) error {

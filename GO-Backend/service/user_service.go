@@ -10,11 +10,16 @@ import (
 )
 
 type UserService struct {
-	userRepo *repository.UserRepository
+	userRepo  *repository.UserRepository
+	phoneRepo *repository.PhoneRepository
 }
 
 func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{userRepo: userRepo}
+}
+
+func (s *UserService) SetPhoneRepository(phoneRepo *repository.PhoneRepository) {
+	s.phoneRepo = phoneRepo
 }
 
 func (s *UserService) CreateUser(user *model.User) error {
@@ -46,7 +51,42 @@ func (s *UserService) GetUserWithPhones(id primitive.ObjectID) (*model.User, err
 		return nil, err
 	}
 
+	// Get the user's phone numbers if phone repository is available
+	if s.phoneRepo != nil {
+		phones, err := s.phoneRepo.GetPhonesByUser(ctx, id)
+		if err != nil {
+			// Log the error but don't fail the request
+			fmt.Printf("Error fetching phones for user %s: %v\n", id.Hex(), err)
+		} else {
+			user.Phones = phones
+		}
+	}
+
 	return user, nil
+}
+
+func (s *UserService) GetAllUsersWithPhones() ([]*model.User, error) {
+	ctx := context.Background()
+	// Get all users
+	users, err := s.userRepo.GetAllUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get phone numbers for each user if phone repository is available
+	if s.phoneRepo != nil {
+		for _, user := range users {
+			phones, err := s.phoneRepo.GetPhonesByUser(ctx, user.ID)
+			if err != nil {
+				// Log the error but don't fail the request
+				fmt.Printf("Error fetching phones for user %s: %v\n", user.ID.Hex(), err)
+			} else {
+				user.Phones = phones
+			}
+		}
+	}
+
+	return users, nil
 }
 
 func (s *UserService) UpdateUser(user *model.User) error {

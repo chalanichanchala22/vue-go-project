@@ -145,6 +145,14 @@ func (h *UserHandler) GetUserWithPhones(c *fiber.Ctx) error {
 	return c.JSON(userWithPhones)
 }
 
+func (h *UserHandler) GetAllUsersWithPhones(c *fiber.Ctx) error {
+	users, err := h.userService.GetAllUsersWithPhones()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(users)
+}
+
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID, err := primitive.ObjectIDFromHex(id)

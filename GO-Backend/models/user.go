@@ -15,6 +15,7 @@ type User struct {
 	Birthday time.Time          `json:"birthday" bson:"birthday"`
 	Gender   string             `json:"gender" bson:"gender"`
 	Photo    string             `json:"photo" bson:"photo"`
+	Phones   []*PhoneNumber     `json:"phones,omitempty" bson:"phones,omitempty"`
 }
 
 func (u *User) Validate() bool {

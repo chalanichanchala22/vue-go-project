@@ -43,12 +43,18 @@ func main() {
 
 	db := config.GetDatabase()
 	userRepo := repository.NewUserRepository(db)
+	phoneRepo := repository.NewPhoneRepository(db)
+
 	userService := service.NewUserService(userRepo)
+	userService.SetPhoneRepository(phoneRepo)
 	userHandler := handler.NewUserHandler(userService)
+
+	phoneService := service.NewPhoneService(phoneRepo)
+	phoneHandler := handler.NewPhoneHandler(phoneService)
 
 	// API routes with prefix
 	api := app.Group("/api")
-	routes.RegisterRoutes(api, userHandler)
+	routes.RegisterRoutes(api, userHandler, phoneHandler)
 
 	fmt.Println("Server starting on :8080...")
 	log.Fatal(app.Listen(":8080"))
