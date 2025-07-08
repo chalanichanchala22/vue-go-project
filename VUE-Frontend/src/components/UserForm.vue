@@ -13,6 +13,32 @@
         />
       </div>
 
+      <!-- Profile Photo Section -->
+      <div class="form-group photo-upload-section">
+        <label for="photo">Profile Photo</label>
+        <div class="photo-upload-container">
+          <div v-if="photoPreview" class="photo-preview">
+            <img :src="photoPreview" alt="Profile Preview" class="preview-image" />
+            <button type="button" @click="removePhoto" class="remove-photo-btn">
+              <span>×</span>
+            </button>
+          </div>
+          <div v-else class="upload-placeholder">
+            <div class="upload-icon">📷</div>
+            <p>Click to upload photo</p>
+            <p class="upload-hint">JPG, PNG, GIF up to 5MB</p>
+          </div>
+          <input 
+            id="photo"
+            ref="fileInput"
+            type="file"
+            accept="image/*"
+            @change="handlePhotoUpload"
+            class="photo-input"
+          />
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="email">Email *</label>
         <input 
@@ -134,7 +160,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { createUser } from '../services/userService'
+import { createUser, createUserWithPhoto } from '../services/userService'
 import { createPhone } from '../services/phoneService'
 
 const emit = defineEmits(['refresh', 'viewUserDetails'])
@@ -150,6 +176,9 @@ const phoneNumbers = ref([
 
 const isLoading = ref(false)
 const errorMessage = ref('')
+const selectedPhoto = ref(null)
+const photoPreview = ref(null)
+const fileInput = ref(null)
 
 const addPhone = () => {
   phoneNumbers.value.push({ number: '', type: 'mobile' })
@@ -158,6 +187,42 @@ const addPhone = () => {
 const removePhone = (index) => {
   if (phoneNumbers.value.length > 1) {
     phoneNumbers.value.splice(index, 1)
+  }
+}
+
+const handlePhotoUpload = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      errorMessage.value = 'Photo size must be less than 5MB'
+      return
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      errorMessage.value = 'Please select a valid image file'
+      return
+    }
+    
+    selectedPhoto.value = file
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      photoPreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+    
+    errorMessage.value = ''
+  }
+}
+
+const removePhoto = () => {
+  selectedPhoto.value = null
+  photoPreview.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
   }
 }
 
@@ -200,22 +265,36 @@ const submit = async () => {
       return
     }
     
-    // Format the user data to match backend expectations
+    // Format the user data
     const birthdayDate = new Date(user.value.birthday)
-    birthdayDate.setUTCHours(0, 0, 0, 0) // Set to midnight UTC
+    birthdayDate.setUTCHours(0, 0, 0, 0)
     
-    const userData = {
-      name: user.value.name.trim(),
-      email: user.value.email.trim(),
-      nic: user.value.nic.trim(),
-      address: user.value.address.trim(),
-      birthday: birthdayDate.toISOString(), // Convert to RFC3339 format
-      gender: user.value.gender
+    let response
+    
+    // Always use FormData to ensure consistent behavior
+    const formData = new FormData()
+    formData.append('name', user.value.name.trim())
+    formData.append('email', user.value.email.trim())
+    formData.append('nic', user.value.nic.trim())
+    formData.append('address', user.value.address.trim())
+    formData.append('birthday', birthdayDate.toISOString())
+    formData.append('gender', user.value.gender)
+    
+    if (selectedPhoto.value) {
+      formData.append('photo', selectedPhoto.value)
+      console.log('Submitting user data with photo')
+      console.log('Photo file:', selectedPhoto.value)
+    } else {
+      console.log('Submitting user data without photo')
     }
     
-    console.log('Submitting user data:', userData)
+    console.log('FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value)
+    }
     
-    const response = await createUser(userData)
+    response = await createUserWithPhoto(formData)
+    
     console.log('User created successfully:', response.data)
     
     // Create phone numbers if any are provided
@@ -238,6 +317,7 @@ const submit = async () => {
     // Reset form
     user.value = { name: '', email: '', nic: '', address: '', birthday: '', gender: '' }
     phoneNumbers.value = [{ number: '', type: 'mobile' }]
+    removePhoto()
     
     // Emit refresh event
     emit('refresh')
@@ -458,6 +538,102 @@ const submit = async () => {
 .btn-remove:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+/* Photo Upload Section */
+.photo-upload-section {
+  margin-bottom: 1.5rem;
+}
+
+.photo-upload-container {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  overflow: hidden;
+}
+
+.photo-upload-container:hover {
+  border-color: #4CAF50;
+}
+
+.photo-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #666;
+  padding: 1rem;
+}
+
+.upload-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.upload-placeholder p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.upload-hint {
+  font-size: 0.8rem !important;
+  color: #999;
+}
+
+.photo-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.remove-photo-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: background-color 0.3s ease;
+}
+
+.remove-photo-btn:hover {
+  background: #c82333;
+}
+
+.remove-photo-btn span {
+  margin-top: -2px;
 }
 
 /* Responsive design */

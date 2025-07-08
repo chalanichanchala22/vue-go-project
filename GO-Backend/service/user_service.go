@@ -10,12 +10,11 @@ import (
 )
 
 type UserService struct {
-	userRepo  *repository.UserRepository
-	phoneRepo *repository.PhoneRepository
+	userRepo *repository.UserRepository
 }
 
-func NewUserService(userRepo *repository.UserRepository, phoneRepo *repository.PhoneRepository) *UserService {
-	return &UserService{userRepo: userRepo, phoneRepo: phoneRepo}
+func NewUserService(userRepo *repository.UserRepository) *UserService {
+	return &UserService{userRepo: userRepo}
 }
 
 func (s *UserService) CreateUser(user *model.User) error {
@@ -41,21 +40,11 @@ func (s *UserService) GetUser(id primitive.ObjectID) (*model.User, error) {
 
 func (s *UserService) GetUserWithPhones(id primitive.ObjectID) (*model.User, error) {
 	ctx := context.Background()
-
 	// Get the user
 	user, err := s.userRepo.FindUserByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-
-	// Get the user's phones
-	phones, err := s.phoneRepo.GetPhonesByUser(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add phones to the user
-	user.Phones = phones
 
 	return user, nil
 }
@@ -73,5 +62,5 @@ func (s *UserService) DeleteUser(id primitive.ObjectID) error {
 	if err := s.userRepo.DeleteUser(ctx, id); err != nil {
 		return err
 	}
-	return s.phoneRepo.DeletePhonesByUserID(ctx, id)
+	return nil
 }

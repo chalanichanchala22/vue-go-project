@@ -1,7 +1,9 @@
 package repository
 
+// all database operations related to the users collection.
 import (
 	"context"
+	"fmt"
 	model "go-fiber-app/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,12 +20,15 @@ func NewUserRepository(db *mongo.Database) *UserRepository {
 }
 
 func (r *UserRepository) CreateUser(ctx context.Context, user *model.User) error {
-    result, err := r.collection.InsertOne(ctx, user)
-    if err != nil {
-        return err
-    }
-    user.ID = result.InsertedID.(primitive.ObjectID)
-    return nil
+	fmt.Printf("Repository: About to save user to database: %+v\n", user)
+	result, err := r.collection.InsertOne(ctx, user)
+	if err != nil {
+		fmt.Printf("Repository: Error saving user: %v\n", err)
+		return err
+	}
+	user.ID = result.InsertedID.(primitive.ObjectID)
+	fmt.Printf("Repository: User saved successfully with ID: %v\n", user.ID)
+	return nil
 }
 
 func (r *UserRepository) FindUserByID(ctx context.Context, id primitive.ObjectID) (*model.User, error) {
@@ -62,4 +67,3 @@ func (r *UserRepository) GetAllUsers(ctx context.Context) ([]*model.User, error)
 	}
 	return users, nil
 }
-

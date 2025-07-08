@@ -1,16 +1,16 @@
 package config
 
 import (
-    "context"
-    "log"
-    "os"
+    "context" //context is used to manage timeouts or cancel operations (like connecting to MongoDB
+    "log" //log is used to print messages to the console.
+    "os" //os lets you read environment variables 
     "time"
 
     "go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Client *mongo.Client
+var Client *mongo.Client //stores the MongoDB client
 
 func ConnectDB() {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
