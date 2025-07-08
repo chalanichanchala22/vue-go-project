@@ -26,8 +26,6 @@ func (s *UserService) CreateUser(user *model.User) error {
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
 		return err
 	}
-	// Note: Phone numbers are created separately via the phone endpoints
-	// No need to create phones here since user.PhoneIDs will be empty for new users
 	return nil
 }
 
@@ -41,7 +39,7 @@ func (s *UserService) GetUser(id primitive.ObjectID) (*model.User, error) {
 	return s.userRepo.FindUserByID(ctx, id)
 }
 
-func (s *UserService) GetUserWithPhones(id primitive.ObjectID) (*model.UserWithPhones, error) {
+func (s *UserService) GetUserWithPhones(id primitive.ObjectID) (*model.User, error) {
 	ctx := context.Background()
 
 	// Get the user
@@ -56,19 +54,10 @@ func (s *UserService) GetUserWithPhones(id primitive.ObjectID) (*model.UserWithP
 		return nil, err
 	}
 
-	// Create UserWithPhones struct
-	userWithPhones := &model.UserWithPhones{
-		ID:       user.ID,
-		Name:     user.Name,
-		Email:    user.Email,
-		NIC:      user.NIC,
-		Address:  user.Address,
-		Birthday: user.Birthday,
-		Gender:   user.Gender,
-		Phones:   phones,
-	}
+	// Add phones to the user
+	user.Phones = phones
 
-	return userWithPhones, nil
+	return user, nil
 }
 
 func (s *UserService) UpdateUser(user *model.User) error {

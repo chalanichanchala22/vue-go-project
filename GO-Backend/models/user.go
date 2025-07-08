@@ -14,16 +14,6 @@ type User struct {
 	Address  string             `json:"address" bson:"address"`
 	Birthday time.Time          `json:"birthday" bson:"birthday"`
 	Gender   string             `json:"gender" bson:"gender"`
-}
-
-type UserWithPhones struct {
-	ID       primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name     string             `json:"name" bson:"name"`
-	Email    string             `json:"email" bson:"email"`
-	NIC      string             `json:"nic" bson:"nic"`
-	Address  string             `json:"address" bson:"address"`
-	Birthday time.Time          `json:"birthday" bson:"birthday"`
-	Gender   string             `json:"gender" bson:"gender"`
 	Phones   []PhoneNumber      `json:"phones" bson:"phones,omitempty"`
 }
 

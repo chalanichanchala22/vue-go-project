@@ -26,7 +26,6 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *model.User) error
     return nil
 }
 
-
 func (r *UserRepository) FindUserByID(ctx context.Context, id primitive.ObjectID) (*model.User, error) {
 	var user model.User
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
@@ -63,3 +62,4 @@ func (r *UserRepository) GetAllUsers(ctx context.Context) ([]*model.User, error)
 	}
 	return users, nil
 }
+
