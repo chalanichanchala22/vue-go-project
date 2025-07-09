@@ -40,6 +40,15 @@ func (r *UserRepository) FindUserByID(ctx context.Context, id primitive.ObjectID
 	return &user, nil
 }
 
+func (r *UserRepository) FindUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user model.User
+	err := r.collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *UserRepository) UpdateUser(ctx context.Context, user *model.User) error {
 	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": user.ID}, user)
 	return err

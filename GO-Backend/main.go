@@ -9,11 +9,13 @@ import (
 	"go-fiber-app/service"
 	"go-fiber-app/utils"
 	"log"
+	"os"
 
 	_ "go-fiber-app/docs" // important for swag docs
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	jwtware "github.com/gofiber/jwt/v3"
 	fiberSwagger "github.com/swaggo/fiber-swagger" // fiber swagger middleware
 )
 
@@ -66,6 +68,13 @@ func main() {
 
 	// API routes with prefix
 	api := app.Group("/api")
+	api.Post("/login", handler.Login)
+
+	// JWT middleware for protected routes
+	app.Use("/api/users", jwtware.New(jwtware.Config{
+		SigningKey: []byte(os.Getenv("JWT_SECRET")),
+	}))
+
 	routes.RegisterRoutes(api, userHandler, phoneHandler)
 
 	fmt.Println("Server starting on :8080...")

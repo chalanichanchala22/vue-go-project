@@ -116,3 +116,8 @@ func (s *UserService) DeleteUser(id primitive.ObjectID) error {
 	}
 	return nil
 }
+
+func (s *UserService) GetUserByEmail(email string) (*model.User, error) {
+	ctx := context.Background()
+	return s.userRepo.FindUserByEmail(ctx, email)
+}

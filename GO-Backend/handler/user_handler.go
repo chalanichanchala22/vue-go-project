@@ -32,15 +32,14 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 // @Param        name      formData  string  true   "User's full name"
 // @Param        email     formData  string  true   "User's email address"
 // @Param        nic       formData  string  true   "National ID number"
-// @Param        address   formData  string  false  "User's address"
-// @Param        birthday  formData  string  false  "Birthday in ISO format (e.g. 2006-01-02T15:04:05.000Z)"
-// @Param        gender    formData  string  false  "Gender (e.g. Male or Female)"
+// @Param        address   formData  string  true   "User's address"
+// @Param        birthday  formData  string  true   "Birthday as string (e.g. 2008-07-09 or any date format)"
+// @Param        gender    formData  string  true   "Gender (e.g. Male or Female)"
 // @Param        photo     formData  file    false  "User's profile image (jpg/png)"
 // @Success      201  {object}  model.User
 // @Failure      400  {object}  map[string]string
 // @Failure      500  {object}  map[string]string
 // @Router       /users [post]
-
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	// Parse multipart form
 	form, err := c.MultipartForm()
@@ -123,7 +122,10 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	fmt.Printf("User data before saving: %+v\n", user)
+	fmt.Printf("Validation check - Name: '%s', Email: '%s', NIC: '%s', Address: '%s', Birthday: '%s', Gender: '%s'\n",
+		user.Name, user.Email, user.NIC, user.Address, user.Birthday, user.Gender)
 	if err := h.userService.CreateUser(&user); err != nil {
+		fmt.Printf("Validation failed: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	fmt.Printf("User saved successfully: %+v\n", user)
