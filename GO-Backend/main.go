@@ -10,9 +10,18 @@ import (
 	"go-fiber-app/utils"
 	"log"
 
+	_ "go-fiber-app/docs" // important for swag docs
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	fiberSwagger "github.com/swaggo/fiber-swagger" // fiber swagger middleware
 )
+
+// @title           Go Fiber User API
+// @version         1.0
+// @description     A simple user management API using Fiber and MongoDB.
+// @host            localhost:8080
+// @BasePath        /api
 
 func main() {
 	fmt.Println("Starting Go Backend Server...")
@@ -32,6 +41,9 @@ func main() {
 
 	// Serve static files for uploads
 	app.Static("/uploads", "./storage/uploads")
+
+	// Swagger route
+	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// Root route - Health check/Welcome message
 	app.Get("/", func(c *fiber.Ctx) error {

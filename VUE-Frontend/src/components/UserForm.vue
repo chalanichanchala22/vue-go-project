@@ -108,7 +108,7 @@
                 v-model="phone.number" 
                 type="tel"
                 placeholder="Enter phone number"
-                pattern="[0-9+\-\s()]*"
+                pattern="[0-9+\s()-]*"
                 maxlength="10"
               />
             </div>

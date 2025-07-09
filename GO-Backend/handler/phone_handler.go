@@ -17,6 +17,18 @@ func NewPhoneHandler(phoneService *service.PhoneService) *PhoneHandler {
 	return &PhoneHandler{phoneService: phoneService}
 }
 
+// CreatePhone godoc
+// @Summary      Create a new phone number for a user
+// @Description  Add a new phone number to an existing user
+// @Tags         Phones
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string               true  "User ID"
+// @Param        phone body    model.PhoneNumber    true  "Phone number data"
+// @Success      201  {object}  model.PhoneNumber
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /users/{id}/phones [post]
 func (h *PhoneHandler) CreatePhone(c *fiber.Ctx) error {
 	userID := c.Params("id")
 	fmt.Printf("Received request to create phone for user ID: %s\n", userID)
@@ -45,6 +57,17 @@ func (h *PhoneHandler) CreatePhone(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(phone)
 }
 
+// GetPhonesByUser godoc
+// @Summary      Get all phone numbers for a user
+// @Description  Retrieve all phone numbers associated with a specific user
+// @Tags         Phones
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "User ID"
+// @Success      200  {array}   model.PhoneNumber
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /users/{id}/phones [get]
 func (h *PhoneHandler) GetPhonesByUser(c *fiber.Ctx) error {
 	userID := c.Params("id")
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
@@ -60,6 +83,19 @@ func (h *PhoneHandler) GetPhonesByUser(c *fiber.Ctx) error {
 	return c.JSON(phones)
 }
 
+// UpdatePhone godoc
+// @Summary      Update a phone number
+// @Description  Update an existing phone number for a user
+// @Tags         Phones
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string            true  "User ID"
+// @Param        phoneId  path      string            true  "Phone ID"
+// @Param        phone    body      model.PhoneNumber true  "Updated phone data"
+// @Success      200      {object}  model.PhoneNumber
+// @Failure      400      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /users/{id}/phones/{phoneId} [put]
 func (h *PhoneHandler) UpdatePhone(c *fiber.Ctx) error {
 	userID := c.Params("id")
 	phoneID := c.Params("phoneId")
@@ -89,6 +125,18 @@ func (h *PhoneHandler) UpdatePhone(c *fiber.Ctx) error {
 	return c.JSON(phone)
 }
 
+// DeletePhone godoc
+// @Summary      Delete a phone number
+// @Description  Delete a specific phone number for a user
+// @Tags         Phones
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "User ID"
+// @Param        phoneId  path      string  true  "Phone ID"
+// @Success      204      "No Content"
+// @Failure      400      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /users/{id}/phones/{phoneId} [delete]
 func (h *PhoneHandler) DeletePhone(c *fiber.Ctx) error {
 	userID := c.Params("id")
 	phoneID := c.Params("phoneId")
