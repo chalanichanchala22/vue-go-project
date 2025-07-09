@@ -293,7 +293,7 @@ const submit = async () => {
       console.log(key, value)
     }
     
-    response = await createUserWithPhoto(formData)
+    response = await createUser(formData)
     
     console.log('User created successfully:', response.data)
     
