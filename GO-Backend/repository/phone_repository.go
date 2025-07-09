@@ -19,14 +19,21 @@ func NewPhoneRepository(db *mongo.Database) *PhoneRepository {
 }
 
 func (r *PhoneRepository) CreatePhone(ctx context.Context, phone *model.PhoneNumber) error {
+	fmt.Printf("PhoneRepository.CreatePhone called with: %+v\n", phone)
+
 	collection := r.db.Collection("phones")
 	phone.ID = primitive.NewObjectID()
 
-	_, err := collection.InsertOne(ctx, phone)
+	fmt.Printf("Generated ID for phone: %s\n", phone.ID.Hex())
+	fmt.Printf("Inserting phone into collection: %+v\n", phone)
+
+	result, err := collection.InsertOne(ctx, phone)
 	if err != nil {
+		fmt.Printf("MongoDB insert error: %v\n", err)
 		return fmt.Errorf("error creating phone: %w", err)
 	}
 
+	fmt.Printf("Phone inserted successfully with ID: %v\n", result.InsertedID)
 	return nil
 }
 

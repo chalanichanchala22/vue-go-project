@@ -15,39 +15,6 @@
         <div class="phone-numbers">
           <div class="phone-header">
             <h4>Phone Numbers:</h4>
-            <button @click="showAddPhoneForm(userWithPhones.user.id)" class="btn-phone btn-add">
-              ➕ Add
-            </button>
-          </div>
-          
-          <!-- Add Phone Form -->
-          <div v-if="addingPhoneForUser === userWithPhones.user.id" class="add-phone-form">
-            <div class="form-group">
-              <input
-                v-model="newPhone.number"
-                type="tel"
-                class="form-control"
-                placeholder="Enter phone number"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <select v-model="newPhone.type" class="form-control" required>
-                <option value="">Select type</option>
-                <option value="mobile">Mobile</option>
-                <option value="home">Home</option>
-                <option value="work">Work</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="form-actions">
-              <button @click="addPhone(userWithPhones.user.id)" class="btn-phone btn-save" :disabled="!newPhone.number || !newPhone.type">
-                Save
-              </button>
-              <button @click="cancelAddPhone" class="btn-phone btn-cancel">
-                Cancel
-              </button>
-            </div>
           </div>
 
           <div v-if="userWithPhones.phones && userWithPhones.phones.length > 0" class="phones-list">
@@ -128,18 +95,13 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { deleteUser } from '../services/userService'
-import { createPhone, updatePhone as updatePhoneService, deletePhone as deletePhoneService } from '../services/phoneService'
+import { updatePhone as updatePhoneService, deletePhone as deletePhoneService } from '../services/phoneService'
 
 const props = defineProps(['usersWithPhones'])
 const emit = defineEmits(['deleted', 'edit', 'phoneEdit', 'phoneDeleted', 'userProfileEdit', 'phoneUpdated'])
 
 // Phone management state
-const addingPhoneForUser = ref(null)
 const editingPhone = ref(null)
-const newPhone = reactive({
-  number: '',
-  type: ''
-})
 
 const edit = (user) => {
   emit('edit', user)
@@ -147,31 +109,6 @@ const edit = (user) => {
 
 const editUserProfile = (user) => {
   emit('userProfileEdit', user)
-}
-
-const showAddPhoneForm = (userId) => {
-  addingPhoneForUser.value = userId
-  newPhone.number = ''
-  newPhone.type = ''
-}
-
-const cancelAddPhone = () => {
-  addingPhoneForUser.value = null
-  newPhone.number = ''
-  newPhone.type = ''
-}
-
-const addPhone = async (userId) => {
-  try {
-    await createPhone({
-      ...newPhone,
-      user_id: userId
-    })
-    emit('phoneUpdated')
-    cancelAddPhone()
-  } catch (error) {
-    console.error('Error adding phone:', error)
-  }
 }
 
 const editPhone = (userId, phone) => {
@@ -309,81 +246,6 @@ const del = async (id) => {
 
 .phone-header h4 {
   margin: 0;
-}
-
-.btn-add {
-  background-color: #28a745;
-  color: white;
-  font-size: 0.8rem;
-  padding: 0.4rem 0.8rem;
-}
-
-.btn-add:hover {
-  background-color: #218838;
-}
-
-.add-phone-form {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  border: 1px solid #e9ecef;
-}
-
-.form-group {
-  margin-bottom: 0.8rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.3rem;
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.8rem;
-}
-
-.btn-save {
-  background-color: #28a745;
-  color: white;
-}
-
-.btn-save:hover:not(:disabled) {
-  background-color: #218838;
-}
-
-.btn-save:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-cancel {
-  background-color: #6c757d;
-  color: white;
-}
-
-.btn-cancel:hover {
-  background-color: #545b62;
 }
 
 .phones-list {

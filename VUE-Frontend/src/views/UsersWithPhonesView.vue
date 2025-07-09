@@ -23,7 +23,9 @@
       <UserWithPhonesList 
         v-if="showWithPhones" 
         :usersWithPhones="usersWithPhones" 
-        @deleted="loadUsersWithPhones" 
+        @deleted="loadUsersWithPhones"
+        @phoneUpdated="loadUsersWithPhones"
+        @phoneDeleted="loadUsersWithPhones"
       />
       <UserList 
         v-else 
@@ -37,7 +39,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import UserList from '../components/UserList.vue'
+import UserList from '../components/UserDetails.vue'
 import UserWithPhonesList from '../components/UserWithPhonesList.vue'
 import { getUsers, getUsersWithPhones } from '../services/userService'
 

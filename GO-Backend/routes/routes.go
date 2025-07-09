@@ -9,6 +9,7 @@ import (
 func RegisterRoutes(r fiber.Router, userHandler *handler.UserHandler, phoneHandler *handler.PhoneHandler) {
 	// User routes
 	r.Get("/users", userHandler.GetAllUsers)
+	r.Get("/users/with-phones", userHandler.GetAllUsersWithPhones)
 	r.Post("/users", userHandler.CreateUser)
 	r.Get("/users/:id", userHandler.GetUser)
 	r.Get("/users/:id/details", userHandler.GetUser)

@@ -12,33 +12,6 @@
           required 
         />
       </div>
-
-      <!-- Profile Photo Section -->
-      <div class="form-group photo-upload-section">
-        <label for="photo">Profile Photo</label>
-        <div class="photo-upload-container">
-          <div v-if="photoPreview" class="photo-preview">
-            <img :src="photoPreview" alt="Profile Preview" class="preview-image" />
-            <button type="button" @click="removePhoto" class="remove-photo-btn">
-              <span>×</span>
-            </button>
-          </div>
-          <div v-else class="upload-placeholder">
-            <div class="upload-icon">📷</div>
-            <p>Click to upload photo</p>
-            <p class="upload-hint">JPG, PNG, GIF up to 5MB</p>
-          </div>
-          <input 
-            id="photo"
-            ref="fileInput"
-            type="file"
-            accept="image/*"
-            @change="handlePhotoUpload"
-            class="photo-input"
-          />
-        </div>
-      </div>
-
       <div class="form-group">
         <label for="email">Email *</label>
         <input 
@@ -95,6 +68,33 @@
           </select>
         </div>
       </div>
+
+       <!-- Profile Photo Section -->
+      <div class="form-group photo-upload-section">
+        <label for="photo">Profile Photo</label>
+        <div class="photo-upload-container">
+          <div v-if="photoPreview" class="photo-preview">
+            <img :src="photoPreview" alt="Profile Preview" class="preview-image" />
+            <button type="button" @click="removePhoto" class="remove-photo-btn">
+              <span>×</span>
+            </button>
+          </div>
+          <div v-else class="upload-placeholder">
+            <div class="upload-icon">📷</div>
+            <p>Click to upload photo</p>
+            <p class="upload-hint">JPG, PNG, GIF up to 5MB</p>
+          </div>
+          <input 
+            id="photo"
+            ref="fileInput"
+            type="file"
+            accept="image/*"
+            @change="handlePhotoUpload"
+            class="photo-input"
+          />
+        </div>
+      </div>
+
 
       <!-- Phone Numbers Section -->
       <div class="phone-section">
@@ -301,12 +301,11 @@ const submit = async () => {
     if (validPhones.length > 0) {
       for (const phone of validPhones) {
         const phoneData = {
-          user_id: response.data.id,
           number: phone.number.trim(),
           type: phone.type
         }
         try {
-          await createPhone(phoneData)
+          await createPhone(response.data.id, phoneData)
           console.log('Phone number created:', phoneData)
         } catch (phoneError) {
           console.error('Error creating phone number:', phoneError)

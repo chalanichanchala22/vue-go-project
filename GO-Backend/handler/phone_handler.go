@@ -19,13 +19,17 @@ func NewPhoneHandler(phoneService *service.PhoneService) *PhoneHandler {
 
 func (h *PhoneHandler) CreatePhone(c *fiber.Ctx) error {
 	userID := c.Params("id")
+	fmt.Printf("Received request to create phone for user ID: %s\n", userID)
+
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
+		fmt.Printf("Error converting user ID to ObjectID: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
 	var phone model.PhoneNumber
 	if err := c.BodyParser(&phone); err != nil {
+		fmt.Printf("Error parsing request body: %v\n", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -33,9 +37,11 @@ func (h *PhoneHandler) CreatePhone(c *fiber.Ctx) error {
 	fmt.Printf("Creating phone: %+v\n", phone)
 
 	if err := h.phoneService.CreatePhone(&phone); err != nil {
+		fmt.Printf("Error creating phone in service: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	fmt.Printf("Phone created successfully: %+v\n", phone)
 	return c.Status(fiber.StatusCreated).JSON(phone)
 }
 

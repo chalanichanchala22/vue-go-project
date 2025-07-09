@@ -57,9 +57,14 @@ func (s *UserService) GetUserWithPhones(id primitive.ObjectID) (*model.User, err
 		if err != nil {
 			// Log the error but don't fail the request
 			fmt.Printf("Error fetching phones for user %s: %v\n", id.Hex(), err)
+			// Initialize empty slice even on error
+			user.Phones = []*model.PhoneNumber{}
 		} else {
 			user.Phones = phones
 		}
+	} else {
+		// Initialize empty phones slice if no phone repository
+		user.Phones = []*model.PhoneNumber{}
 	}
 
 	return user, nil
@@ -80,9 +85,16 @@ func (s *UserService) GetAllUsersWithPhones() ([]*model.User, error) {
 			if err != nil {
 				// Log the error but don't fail the request
 				fmt.Printf("Error fetching phones for user %s: %v\n", user.ID.Hex(), err)
+				// Initialize empty slice even on error
+				user.Phones = []*model.PhoneNumber{}
 			} else {
 				user.Phones = phones
 			}
+		}
+	} else {
+		// Initialize empty phones slice for all users if no phone repository
+		for _, user := range users {
+			user.Phones = []*model.PhoneNumber{}
 		}
 	}
 

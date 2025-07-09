@@ -18,13 +18,21 @@ func NewPhoneService(phoneRepo *repository.PhoneRepository) *PhoneService {
 }
 
 func (s *PhoneService) CreatePhone(phone *model.PhoneNumber) error {
+	fmt.Printf("PhoneService.CreatePhone called with: %+v\n", phone)
+
 	if !phone.Validate() {
+		fmt.Printf("Phone validation failed for: %+v\n", phone)
 		return fmt.Errorf("phone validation failed")
 	}
+
+	fmt.Printf("Phone validation passed, calling repository...\n")
 	ctx := context.Background()
 	if err := s.phoneRepo.CreatePhone(ctx, phone); err != nil {
+		fmt.Printf("Repository error: %v\n", err)
 		return err
 	}
+
+	fmt.Printf("Phone successfully created in repository\n")
 	return nil
 }
 
