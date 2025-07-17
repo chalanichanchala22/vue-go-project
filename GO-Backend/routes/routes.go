@@ -21,7 +21,6 @@ func RegisterRoutes(app *fiber.App, userHandler *handler.UserHandler, phoneHandl
 	userGroup.Get("/", userHandler.GetAllUsers)
 	userGroup.Get("/with-phones", userHandler.GetAllUsersWithPhones)
 	userGroup.Post("/", userHandler.CreateUser)
-	userGroup.Post("/set-password", userHandler.SetPasswordForExistingUser) // Temporary migration endpoint
 	userGroup.Get("/:id", userHandler.GetUser)
 	userGroup.Get("/:id/details", userHandler.GetUser)
 	userGroup.Put("/:id", userHandler.UpdateUser)

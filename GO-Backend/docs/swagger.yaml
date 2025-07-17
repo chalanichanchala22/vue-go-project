@@ -14,9 +14,11 @@ definitions:
         type: string
       birthday:
         example: "1990-01-15"
+        format: date
         type: string
       confirmPassword:
         description: Only for validation
+        example: password123
         type: string
       email:
         example: john.doe@example.com
@@ -31,30 +33,17 @@ definitions:
         example: 123456789V
         type: string
       password:
-        type: string
-    required:
-    - address
-    - birthday
-    - email
-    - gender
-    - name
-    - nic
-    type: object
-  handler.SetPasswordRequest:
-    properties:
-      confirmPassword:
-        example: password123
-        type: string
-      email:
-        example: john.doe@example.com
-        type: string
-      password:
         example: password123
         minLength: 6
         type: string
     required:
+    - address
+    - birthday
     - confirmPassword
     - email
+    - gender
+    - name
+    - nic
     - password
     type: object
   handler.UpdatePasswordRequest:
@@ -182,71 +171,52 @@ paths:
     post:
       consumes:
       - application/json
+      - multipart/form-data
       description: Create a new user account with email, password, and confirm password
         validation
       parameters:
-      - description: User creation data with password
+      - description: User creation data with password (JSON)
         in: body
         name: request
         required: true
         schema:
           $ref: '#/definitions/handler.CreateUserWithPasswordRequest'
       - description: User's full name
-        example: '"John Doe"'
-        in: body
+        in: formData
         name: name
-        required: true
-        schema:
-          type: string
+        type: string
       - description: User's email address
-        example: '"john.doe@example.com"'
-        in: body
+        in: formData
         name: email
-        required: true
-        schema:
-          type: string
+        type: string
       - description: National ID number
-        example: '"123456789V"'
-        in: body
+        in: formData
         name: nic
-        required: true
-        schema:
-          type: string
+        type: string
       - description: User's address
-        example: '"123 Main St, City"'
-        in: body
+        in: formData
         name: address
-        required: true
-        schema:
-          type: string
-      - description: Birthday in YYYY-MM-DD format
-        example: '"1990-01-15"'
-        in: body
+        type: string
+      - description: Birthday in YYYY-MM-DD format (simple date)
+        in: formData
         name: birthday
-        required: true
-        schema:
-          type: string
+        type: string
       - description: Gender (Male/Female)
-        example: '"Male"'
-        in: body
+        in: formData
         name: gender
-        required: true
-        schema:
-          type: string
+        type: string
       - description: Password (minimum 6 characters)
-        example: '"password123"'
-        in: body
+        in: formData
         name: password
-        required: true
-        schema:
-          type: string
+        type: string
       - description: Confirm password (must match password)
-        example: '"password123"'
-        in: body
+        in: formData
         name: confirmPassword
-        required: true
-        schema:
-          type: string
+        type: string
+      - description: User's profile image (jpg/png/gif)
+        in: formData
+        name: photo
+        type: file
       produces:
       - application/json
       responses:
@@ -358,7 +328,7 @@ paths:
         in: formData
         name: address
         type: string
-      - description: Birthday in ISO format (e.g. 2006-01-02T15:04:05.000Z)
+      - description: Birthday in YYYY-MM-DD format (simple date)
         in: formData
         name: birthday
         type: string
@@ -366,7 +336,7 @@ paths:
         in: formData
         name: gender
         type: string
-      - description: User's profile image (jpg/png)
+      - description: User's profile image (jpg/png/gif)
         in: formData
         name: photo
         type: file
@@ -655,49 +625,6 @@ paths:
               type: string
             type: object
       summary: Get a user with phone numbers
-      tags:
-      - Users
-  /users/set-password:
-    post:
-      consumes:
-      - application/json
-      description: Set password for users who don't have passwords (temporary migration
-        endpoint)
-      parameters:
-      - description: Password data for existing user
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handler.SetPasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Password set successfully
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Invalid request or validation errors
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Set password for existing user (Migration helper)
       tags:
       - Users
   /users/with-phones:

@@ -114,7 +114,8 @@ const docTemplate = `{
             "post": {
                 "description": "Create a new user account with email, password, and confirm password validation",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -125,7 +126,7 @@ const docTemplate = `{
                 "summary": "Create a new user with password",
                 "parameters": [
                     {
-                        "description": "User creation data with password",
+                        "description": "User creation data with password (JSON)",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -134,84 +135,58 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "example": "\"John Doe\"",
+                        "type": "string",
                         "description": "User's full name",
                         "name": "name",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
                     },
                     {
-                        "example": "\"john.doe@example.com\"",
+                        "type": "string",
                         "description": "User's email address",
                         "name": "email",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
                     },
                     {
-                        "example": "\"123456789V\"",
+                        "type": "string",
                         "description": "National ID number",
                         "name": "nic",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
                     },
                     {
-                        "example": "\"123 Main St, City\"",
+                        "type": "string",
                         "description": "User's address",
                         "name": "address",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
                     },
                     {
-                        "example": "\"1990-01-15\"",
-                        "description": "Birthday in YYYY-MM-DD format",
+                        "type": "string",
+                        "description": "Birthday in YYYY-MM-DD format (simple date)",
                         "name": "birthday",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
                     },
                     {
-                        "example": "\"Male\"",
+                        "type": "string",
                         "description": "Gender (Male/Female)",
                         "name": "gender",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
                     },
                     {
-                        "example": "\"password123\"",
+                        "type": "string",
                         "description": "Password (minimum 6 characters)",
                         "name": "password",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
                     },
                     {
-                        "example": "\"password123\"",
+                        "type": "string",
                         "description": "Confirm password (must match password)",
                         "name": "confirmPassword",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "User's profile image (jpg/png/gif)",
+                        "name": "photo",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -223,70 +198,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request or validation errors",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/users/set-password": {
-            "post": {
-                "description": "Set password for users who don't have passwords (temporary migration endpoint)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Set password for existing user (Migration helper)",
-                "parameters": [
-                    {
-                        "description": "Password data for existing user",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handler.SetPasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Password set successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request or validation errors",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -436,7 +347,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Birthday in ISO format (e.g. 2006-01-02T15:04:05.000Z)",
+                        "description": "Birthday in YYYY-MM-DD format (simple date)",
                         "name": "birthday",
                         "in": "formData"
                     },
@@ -448,7 +359,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "file",
-                        "description": "User's profile image (jpg/png)",
+                        "description": "User's profile image (jpg/png/gif)",
                         "name": "photo",
                         "in": "formData"
                     }
@@ -941,10 +852,12 @@ const docTemplate = `{
             "required": [
                 "address",
                 "birthday",
+                "confirmPassword",
                 "email",
                 "gender",
                 "name",
-                "nic"
+                "nic",
+                "password"
             ],
             "properties": {
                 "address": {
@@ -953,11 +866,13 @@ const docTemplate = `{
                 },
                 "birthday": {
                     "type": "string",
+                    "format": "date",
                     "example": "1990-01-15"
                 },
                 "confirmPassword": {
                     "description": "Only for validation",
-                    "type": "string"
+                    "type": "string",
+                    "example": "password123"
                 },
                 "email": {
                     "type": "string",
@@ -974,27 +889,6 @@ const docTemplate = `{
                 "nic": {
                     "type": "string",
                     "example": "123456789V"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "handler.SetPasswordRequest": {
-            "type": "object",
-            "required": [
-                "confirmPassword",
-                "email",
-                "password"
-            ],
-            "properties": {
-                "confirmPassword": {
-                    "type": "string",
-                    "example": "password123"
-                },
-                "email": {
-                    "type": "string",
-                    "example": "john.doe@example.com"
                 },
                 "password": {
                     "type": "string",

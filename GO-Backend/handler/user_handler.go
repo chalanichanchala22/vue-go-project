@@ -21,21 +21,15 @@ type UpdatePasswordRequest struct {
 	ConfirmPassword string `json:"confirmPassword" validate:"required" example:"newpassword123"`
 }
 
-type SetPasswordRequest struct {
-	Email           string `json:"email" validate:"required,email" example:"john.doe@example.com"`
-	Password        string `json:"password" validate:"required,min=6" example:"password123"`
-	ConfirmPassword string `json:"confirmPassword" validate:"required" example:"password123"`
-}
-
 type CreateUserWithPasswordRequest struct {
 	Name            string `json:"name" validate:"required" example:"John Doe"`
 	Email           string `json:"email" validate:"required,email" example:"john.doe@example.com"`
 	NIC             string `json:"nic" validate:"required" example:"123456789V"`
 	Address         string `json:"address" validate:"required" example:"123 Main St, City"`
-	Birthday        string `json:"birthday" validate:"required" example:"1990-01-15"`
+	Birthday        string `json:"birthday" validate:"required" example:"1990-01-15" format:"date"`
 	Gender          string `json:"gender" validate:"required" example:"Male"`
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirmPassword"` // Only for validation
+	Password        string `json:"password" validate:"required,min=6" example:"password123"`
+	ConfirmPassword string `json:"confirmPassword" validate:"required" example:"password123"` // Only for validation
 }
 
 // a struct to group all user-related route functions.
@@ -58,11 +52,11 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 // @Param        email           formData string false "User's email address"
 // @Param        nic             formData string false "National ID number"
 // @Param        address         formData string false "User's address"
-// @Param        birthday        formData string false "Birthday in YYYY-MM-DD format"
+// @Param        birthday        formData string false "Birthday in YYYY-MM-DD format (simple date)"
 // @Param        gender          formData string false "Gender (Male/Female)"
 // @Param        password        formData string false "Password (minimum 6 characters)"
 // @Param        confirmPassword formData string false "Confirm password (must match password)"
-// @Param        photo           formData file   false "User's profile image (jpg/png)"
+// @Param        photo           formData file   false "User's profile image (jpg/png/gif)"
 // @Success      201  {object}  model.User
 // @Failure      400  {object}  map[string]string  "Invalid request or validation errors"
 // @Failure      500  {object}  map[string]string  "Internal server error"
@@ -347,9 +341,9 @@ func (h *UserHandler) GetAllUsersWithPhones(c *fiber.Ctx) error {
 // @Param        email     formData  string  false  "User's email address"
 // @Param        nic       formData  string  false  "National ID number"
 // @Param        address   formData  string  false  "User's address"
-// @Param        birthday  formData  string  false  "Birthday in ISO format (e.g. 2006-01-02T15:04:05.000Z)"
+// @Param        birthday  formData  string  false  "Birthday in YYYY-MM-DD format (simple date)"
 // @Param        gender    formData  string  false  "Gender (e.g. Male or Female)"
-// @Param        photo     formData  file    false  "User's profile image (jpg/png)"
+// @Param        photo     formData  file    false  "User's profile image (jpg/png/gif)"
 // @Success      200  {object}  model.User
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
@@ -547,53 +541,4 @@ func (h *UserHandler) UpdateUserPassword(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "Password updated successfully"})
-}
-
-// SetPasswordForExistingUser godoc
-// @Summary      Set password for existing user (Migration helper)
-// @Description  Set password for users who don't have passwords (temporary migration endpoint)
-// @Tags         Users
-// @Accept       json
-// @Produce      json
-// @Param        request body      SetPasswordRequest  true  "Password data for existing user"
-// @Success      200  {object}  map[string]string  "Password set successfully"
-// @Failure      400  {object}  map[string]string  "Invalid request or validation errors"
-// @Failure      404  {object}  map[string]string  "User not found"
-// @Failure      500  {object}  map[string]string  "Internal server error"
-// @Router       /users/set-password [post]
-func (h *UserHandler) SetPasswordForExistingUser(c *fiber.Ctx) error {
-	var req SetPasswordRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
-	}
-
-	// Validate that password and confirm password match
-	if req.Password != req.ConfirmPassword {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password and confirm password do not match"})
-	}
-
-	// Validate password length
-	if len(req.Password) < 6 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password must be at least 6 characters long"})
-	}
-
-	// Get existing user by email
-	existingUser, err := h.userService.GetUserByEmail(req.Email)
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found with this email"})
-	}
-
-	// Hash new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to hash password"})
-	}
-
-	// Update user with new password
-	existingUser.Password = string(hashedPassword)
-	if err := h.userService.UpdateUser(existingUser); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to set password"})
-	}
-
-	return c.JSON(fiber.Map{"message": "Password set successfully for user: " + existingUser.Email})
 }
