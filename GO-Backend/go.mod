@@ -10,6 +10,7 @@ require (
 	github.com/swaggo/fiber-swagger v1.0.3
 	github.com/swaggo/swag v1.16.2
 	go.mongodb.org/mongo-driver v1.17.4
+	golang.org/x/crypto v0.39.0
 )
 
 require (
@@ -40,7 +41,6 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect

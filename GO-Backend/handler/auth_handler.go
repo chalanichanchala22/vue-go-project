@@ -23,6 +23,18 @@ func NewAuthHandler(userService *service.UserService) *AuthHandler {
 	return &AuthHandler{userService: userService}
 }
 
+// Login godoc
+// @Summary      User login
+// @Description  Authenticate user with email and password
+// @Tags         Authentication
+// @Accept       json
+// @Produce      json
+// @Param        request body AuthRequest true "Login credentials"
+// @Success      200 {object} map[string]interface{} "Login successful"
+// @Failure      400 {object} map[string]string "Invalid request"
+// @Failure      401 {object} map[string]string "Invalid credentials"
+// @Failure      500 {object} map[string]string "Internal server error"
+// @Router       /api/auth/login [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req AuthRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -61,31 +73,4 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			"name":  user.Name,
 		},
 	})
-}
-
-// Simple login function for backward compatibility (remove this later)
-func Login(c *fiber.Ctx) error {
-	var req AuthRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
-	}
-
-	// TODO: Replace with DB user check
-	if req.Email != "admin@example.com" || req.Password != "1234" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
-	}
-
-	// Create JWT token
-	claims := jwt.MapClaims{
-		"email": req.Email,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(), // 24-hour token
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	secret := os.Getenv("JWT_SECRET")
-	signedToken, err := token.SignedString([]byte(secret))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not login"})
-	}
-
-	return c.JSON(fiber.Map{"token": signedToken})
 }

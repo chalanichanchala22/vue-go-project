@@ -25,6 +25,29 @@
       </div>
 
       <div class="form-group">
+        <label for="password">Password *</label>
+        <input 
+          id="password"
+          v-model="user.password" 
+          type="password"
+          placeholder="Enter password" 
+          required 
+          minlength="6"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password *</label>
+        <input 
+          id="confirmPassword"
+          v-model="user.confirmPassword" 
+          type="password"
+          placeholder="Re-enter password" 
+          required 
+        />
+      </div>
+
+      <div class="form-group">
         <label for="nic">NIC *</label>
         <input 
           id="nic"
@@ -167,7 +190,7 @@ const emit = defineEmits(['refresh', 'viewUserDetails'])
 const router = useRouter()
 
 const user = ref({
-  name: '', email: '', nic: '', address: '', birthday: '', gender: ''
+  name: '', email: '', password: '', confirmPassword: '', nic: '', address: '', birthday: '', gender: ''
 })
 
 const phoneNumbers = ref([
@@ -242,9 +265,22 @@ const submit = async () => {
     errorMessage.value = ''
     
     // Validate required fields
-    if (!user.value.name || !user.value.email || !user.value.nic || 
+    if (!user.value.name || !user.value.email || !user.value.password || 
+        !user.value.confirmPassword || !user.value.nic || 
         !user.value.address || !user.value.birthday || !user.value.gender) {
       errorMessage.value = 'Please fill in all required fields'
+      return
+    }
+    
+    // Validate password match
+    if (user.value.password !== user.value.confirmPassword) {
+      errorMessage.value = 'Passwords do not match'
+      return
+    }
+    
+    // Validate password length
+    if (user.value.password.length < 6) {
+      errorMessage.value = 'Password must be at least 6 characters long'
       return
     }
     
@@ -266,18 +302,17 @@ const submit = async () => {
     }
     
     // Format the user data
-    const birthdayDate = new Date(user.value.birthday)
-    birthdayDate.setUTCHours(0, 0, 0, 0)
-    
     let response
     
     // Always use FormData to ensure consistent behavior
     const formData = new FormData()
     formData.append('name', user.value.name.trim())
     formData.append('email', user.value.email.trim())
+    formData.append('password', user.value.password)
+    formData.append('confirmPassword', user.value.confirmPassword)
     formData.append('nic', user.value.nic.trim())
     formData.append('address', user.value.address.trim())
-    formData.append('birthday', birthdayDate.toISOString())
+    formData.append('birthday', user.value.birthday) // Send date in YYYY-MM-DD format
     formData.append('gender', user.value.gender)
     
     if (selectedPhoto.value) {
@@ -314,7 +349,7 @@ const submit = async () => {
     }
     
     // Reset form
-    user.value = { name: '', email: '', nic: '', address: '', birthday: '', gender: '' }
+    user.value = { name: '', email: '', password: '', confirmPassword: '', nic: '', address: '', birthday: '', gender: '' }
     phoneNumbers.value = [{ number: '', type: 'mobile' }]
     removePhoto()
     

@@ -11,8 +11,32 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	//primitive is from MongoDB, used to convert string IDs to MongoDB’s ObjectID format.
 )
+
+type UpdatePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword" validate:"required" example:"oldpassword123"`
+	NewPassword     string `json:"newPassword" validate:"required,min=6" example:"newpassword123"`
+	ConfirmPassword string `json:"confirmPassword" validate:"required" example:"newpassword123"`
+}
+
+type SetPasswordRequest struct {
+	Email           string `json:"email" validate:"required,email" example:"john.doe@example.com"`
+	Password        string `json:"password" validate:"required,min=6" example:"password123"`
+	ConfirmPassword string `json:"confirmPassword" validate:"required" example:"password123"`
+}
+
+type CreateUserWithPasswordRequest struct {
+	Name            string `json:"name" validate:"required" example:"John Doe"`
+	Email           string `json:"email" validate:"required,email" example:"john.doe@example.com"`
+	NIC             string `json:"nic" validate:"required" example:"123456789V"`
+	Address         string `json:"address" validate:"required" example:"123 Main St, City"`
+	Birthday        string `json:"birthday" validate:"required" example:"1990-01-15"`
+	Gender          string `json:"gender" validate:"required" example:"Male"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"` // Only for validation
+}
 
 // a struct to group all user-related route functions.
 type UserHandler struct {
@@ -24,73 +48,176 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 }
 
 // CreateUser godoc
-// @Summary      Create a new user
-// @Description  Create a new user with optional photo upload (multipart/form-data)
+// @Summary      Create a new user with password
+// @Description  Create a new user account with email, password, and confirm password validation
 // @Tags         Users
-// @Accept       multipart/form-data
+// @Accept       json,multipart/form-data
 // @Produce      json
-// @Param        name      formData  string  true   "User's full name"
-// @Param        email     formData  string  true   "User's email address"
-// @Param        nic       formData  string  true   "National ID number"
-// @Param        address   formData  string  true   "User's address"
-// @Param        birthday  formData  string  true   "Birthday as string (e.g. 2008-07-09 or any date format)"
-// @Param        gender    formData  string  true   "Gender (e.g. Male or Female)"
-// @Param        photo     formData  file    false  "User's profile image (jpg/png)"
+// @Param        request body CreateUserWithPasswordRequest true "User creation data with password (JSON)"
+// @Param        name            formData string false "User's full name"
+// @Param        email           formData string false "User's email address"
+// @Param        nic             formData string false "National ID number"
+// @Param        address         formData string false "User's address"
+// @Param        birthday        formData string false "Birthday in YYYY-MM-DD format"
+// @Param        gender          formData string false "Gender (Male/Female)"
+// @Param        password        formData string false "Password (minimum 6 characters)"
+// @Param        confirmPassword formData string false "Confirm password (must match password)"
+// @Param        photo           formData file   false "User's profile image (jpg/png)"
 // @Success      201  {object}  model.User
-// @Failure      400  {object}  map[string]string
-// @Failure      500  {object}  map[string]string
+// @Failure      400  {object}  map[string]string  "Invalid request or validation errors"
+// @Failure      500  {object}  map[string]string  "Internal server error"
 // @Router       /users [post]
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	// Parse multipart form
+	// Try to parse as multipart form first
 	form, err := c.MultipartForm()
 	if err != nil {
 		// Fallback to JSON parsing if not multipart
-		var user model.User
-		if err := c.BodyParser(&user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		var req CreateUserWithPasswordRequest
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 		}
-		// Ensure photo field is initialized even for JSON requests
-		if user.Photo == "" {
-			user.Photo = ""
+
+		// Validate that password and confirm password match
+		if req.Password != req.ConfirmPassword {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password and confirm password do not match"})
 		}
-		fmt.Printf("JSON request - User data: %+v\n", user)
-		if err := h.userService.CreateUser(&user); err != nil {
+
+		// Validate password length
+		if len(req.Password) < 6 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password must be at least 6 characters long"})
+		}
+
+		// Hash password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to hash password"})
+		}
+
+		// Parse birthday
+		birthday, err := time.Parse("2006-01-02", req.Birthday)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birthday format. Use YYYY-MM-DD"})
+		}
+
+		// Create user object
+		user := &model.User{
+			Name:     req.Name,
+			Email:    req.Email,
+			NIC:      req.NIC,
+			Address:  req.Address,
+			Birthday: birthday,
+			Gender:   req.Gender,
+			Password: string(hashedPassword),
+			Photo:    "", // Default empty photo
+		}
+
+		// Save user
+		if err := h.userService.CreateUser(user); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+
 		return c.Status(fiber.StatusCreated).JSON(user)
 	}
 
-	// Extract form fields
+	// Handle multipart form data
 	var user model.User
 
+	// Extract and validate required fields from form
 	if name := form.Value["name"]; len(name) > 0 {
 		user.Name = name[0]
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Name is required"})
 	}
+
 	if email := form.Value["email"]; len(email) > 0 {
 		user.Email = email[0]
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Email is required"})
 	}
+
 	if nic := form.Value["nic"]; len(nic) > 0 {
 		user.NIC = nic[0]
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "NIC is required"})
 	}
+
 	if address := form.Value["address"]; len(address) > 0 {
 		user.Address = address[0]
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Address is required"})
 	}
-	if birthday := form.Value["birthday"]; len(birthday) > 0 {
-		if parsedTime, err := time.Parse("2006-01-02T15:04:05.000Z", birthday[0]); err == nil {
-			user.Birthday = parsedTime
-		}
-	}
+
 	if gender := form.Value["gender"]; len(gender) > 0 {
 		user.Gender = gender[0]
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Gender is required"})
 	}
 
-	// Initialize photo field with default value
-	user.Photo = ""
+	// Handle password validation
+	var password, confirmPassword string
+	if pwd := form.Value["password"]; len(pwd) > 0 {
+		password = pwd[0]
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password is required"})
+	}
 
-	// Handle file upload
+	if confPwd := form.Value["confirmPassword"]; len(confPwd) > 0 {
+		confirmPassword = confPwd[0]
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Confirm password is required"})
+	}
+
+	// Validate that password and confirm password match
+	if password != confirmPassword {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password and confirm password do not match"})
+	}
+
+	// Validate password length
+	if len(password) < 6 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password must be at least 6 characters long"})
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to hash password"})
+	}
+	user.Password = string(hashedPassword)
+
+	// Handle birthday
+	if birthday := form.Value["birthday"]; len(birthday) > 0 {
+		birthdayStr := birthday[0]
+		var parsedTime time.Time
+		var err error
+
+		// Try parsing different formats (prioritize simple date format)
+		formats := []string{
+			"2006-01-02",               // YYYY-MM-DD (preferred)
+			"2006-01-02T15:04:05.000Z", // ISO with milliseconds
+			"2006-01-02T15:04:05Z",     // ISO without milliseconds
+			time.RFC3339,               // RFC3339 format
+		}
+
+		for _, format := range formats {
+			parsedTime, err = time.Parse(format, birthdayStr)
+			if err == nil {
+				break
+			}
+		}
+
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birthday format. Expected YYYY-MM-DD format"})
+		}
+
+		user.Birthday = parsedTime
+	} else {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Birthday is required"})
+	}
+
+	// Handle file upload if provided
+	user.Photo = "" // Default empty photo
 	files := form.File["photo"]
 	if len(files) > 0 {
-		fmt.Printf("Photo file found: %s\n", files[0].Filename)
 		file := files[0]
 
 		// Validate file type
@@ -102,33 +229,28 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 		// Create uploads directory if it doesn't exist
 		uploadDir := "./storage/uploads"
 		if err := os.MkdirAll(uploadDir, 0755); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create upload directory"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create upload directory"})
 		}
 
 		// Generate unique filename
-		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), file.Filename)
-		filePath := fmt.Sprintf("%s/%s", uploadDir, filename)
+		timestamp := time.Now().Unix()
+		filename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
+		filepath := fmt.Sprintf("%s/%s", uploadDir, filename)
 
-		// Save file
-		if err := c.SaveFile(file, filePath); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not save file"})
+		// Save the file
+		if err := c.SaveFile(file, filepath); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file"})
 		}
 
-		// Store relative path in user
+		// Store relative path in user object
 		user.Photo = fmt.Sprintf("/uploads/%s", filename)
-		fmt.Printf("Photo path set to: %s\n", user.Photo)
-	} else {
-		fmt.Printf("No photo file found in form\n")
 	}
 
-	fmt.Printf("User data before saving: %+v\n", user)
-	fmt.Printf("Validation check - Name: '%s', Email: '%s', NIC: '%s', Address: '%s', Birthday: '%s', Gender: '%s'\n",
-		user.Name, user.Email, user.NIC, user.Address, user.Birthday, user.Gender)
+	// Save user
 	if err := h.userService.CreateUser(&user); err != nil {
-		fmt.Printf("Validation failed: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	fmt.Printf("User saved successfully: %+v\n", user)
+
 	return c.Status(fiber.StatusCreated).JSON(user)
 }
 
@@ -360,4 +482,118 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// UpdateUserPassword godoc
+// @Summary      Update user password
+// @Description  Update a user's password with current password verification
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id      path      string                 true  "User ID"
+// @Param        request body      UpdatePasswordRequest  true  "Password update data"
+// @Param        currentPassword  body  string  true  "Current password for verification"  example("oldpassword123")
+// @Param        newPassword      body  string  true  "New password (minimum 6 characters)" example("newpassword123")
+// @Param        confirmPassword  body  string  true  "Confirm new password (must match newPassword)" example("newpassword123")
+// @Success      200  {object}  map[string]string  "Password updated successfully"
+// @Failure      400  {object}  map[string]string  "Invalid request or validation errors"
+// @Failure      401  {object}  map[string]string  "Current password is incorrect"
+// @Failure      404  {object}  map[string]string  "User not found"
+// @Failure      500  {object}  map[string]string  "Internal server error"
+// @Router       /users/{id}/password [put]
+func (h *UserHandler) UpdateUserPassword(c *fiber.Ctx) error {
+	id := c.Params("id")
+	userID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
+	}
+
+	var req UpdatePasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	// Validate that new password and confirm password match
+	if req.NewPassword != req.ConfirmPassword {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "New password and confirm password do not match"})
+	}
+
+	// Validate password length
+	if len(req.NewPassword) < 6 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "New password must be at least 6 characters long"})
+	}
+
+	// Get existing user
+	existingUser, err := h.userService.GetUser(userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	// Verify current password
+	if err := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(req.CurrentPassword)); err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Current password is incorrect"})
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to hash new password"})
+	}
+
+	// Update user with new password
+	existingUser.Password = string(hashedPassword)
+	if err := h.userService.UpdateUser(existingUser); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update password"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Password updated successfully"})
+}
+
+// SetPasswordForExistingUser godoc
+// @Summary      Set password for existing user (Migration helper)
+// @Description  Set password for users who don't have passwords (temporary migration endpoint)
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        request body      SetPasswordRequest  true  "Password data for existing user"
+// @Success      200  {object}  map[string]string  "Password set successfully"
+// @Failure      400  {object}  map[string]string  "Invalid request or validation errors"
+// @Failure      404  {object}  map[string]string  "User not found"
+// @Failure      500  {object}  map[string]string  "Internal server error"
+// @Router       /users/set-password [post]
+func (h *UserHandler) SetPasswordForExistingUser(c *fiber.Ctx) error {
+	var req SetPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	// Validate that password and confirm password match
+	if req.Password != req.ConfirmPassword {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password and confirm password do not match"})
+	}
+
+	// Validate password length
+	if len(req.Password) < 6 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Password must be at least 6 characters long"})
+	}
+
+	// Get existing user by email
+	existingUser, err := h.userService.GetUserByEmail(req.Email)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found with this email"})
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to hash password"})
+	}
+
+	// Update user with new password
+	existingUser.Password = string(hashedPassword)
+	if err := h.userService.UpdateUser(existingUser); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to set password"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Password set successfully for user: " + existingUser.Email})
 }

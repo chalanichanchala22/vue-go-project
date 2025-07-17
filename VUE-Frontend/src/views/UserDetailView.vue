@@ -219,6 +219,14 @@ const loadUser = async () => {
   try {
     const res = await getUser(userId)
     user.value = res.data || {}
+    
+    // Debug photo path
+    if (user.value.photo) {
+      console.log('User photo path:', user.value.photo)
+      console.log('Full photo URL:', 'http://localhost:8080' + user.value.photo)
+    } else {
+      console.log('No photo found for user')
+    }
   } catch (error) {
     console.error('Error loading user:', error)
     user.value = {}
