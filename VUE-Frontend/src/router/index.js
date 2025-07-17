@@ -2,19 +2,25 @@ import { createRouter, createWebHistory } from 'vue-router'
 import UsersView from '../views/UsersView.vue'
 import UserDetailView from '../views/UserDetailView.vue'
 import LoginView from '../views/LoginView.vue'
+import DashboardView from '../views/DashboardView.vue'
 import authService from '../services/authService'
 
 const routes = [
   { 
     path: '/', 
     redirect: () => {
-      return authService.isAuthenticated() ? '/users' : '/login'
+      return authService.isAuthenticated() ? '/dashboard' : '/login'
     }
   },
   { 
     path: '/login', 
     component: LoginView,
     meta: { requiresGuest: true }
+  },
+  { 
+    path: '/dashboard', 
+    component: DashboardView,
+    meta: { requiresAuth: true }
   },
   { 
     path: '/users', 
@@ -51,8 +57,8 @@ router.beforeEach((to, from, next) => {
     // Redirect to login if trying to access protected route
     next('/login')
   } else if (to.meta.requiresGuest && isAuthenticated) {
-    // Redirect to users if trying to access login while authenticated
-    next('/users')
+    // Redirect to dashboard if trying to access login while authenticated
+    next('/dashboard')
   } else {
     next()
   }
