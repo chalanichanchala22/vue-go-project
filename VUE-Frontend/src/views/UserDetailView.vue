@@ -24,6 +24,12 @@
           <h2 class="user-name">{{ user.name || `User #${userId}` }}</h2>
           <p class="user-subtitle">User Profile</p>
         </div>
+
+        <div class="user-actions">
+          <button @click="editUser" class="btn btn-primary">
+            <i class="icon-edit"></i> Edit User
+          </button>
+        </div>
       </div>
       
       <div class="user-details">
@@ -184,11 +190,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getPhonesByUser, createPhone, updatePhone as updatePhoneService, deletePhone as deletePhoneService } from '../services/phoneService'
 import { getUser } from '../services/userService'
 
 const route = useRoute()
+const router = useRouter()
 const userId = route.params.id
 const phones = ref([])
 const user = ref({})
@@ -289,6 +296,12 @@ const cancelEdit = () => {
   editingPhone.value = null
 }
 
+// User management functions
+const editUser = () => {
+  // Navigate to user edit page
+  router.push(`/users/${userId}/edit`)
+}
+
 onMounted(() => {
   loadUser()
   loadPhones()
@@ -354,6 +367,31 @@ onMounted(() => {
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-actions {
+  margin-left: auto;
+}
+
+.user-actions .btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.user-actions .btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
 }
 
 .user-avatar {

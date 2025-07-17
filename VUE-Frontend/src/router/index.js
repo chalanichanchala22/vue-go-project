@@ -27,6 +27,11 @@ const routes = [
     meta: { requiresAuth: true }
   },
   { 
+    path: '/users/:id/edit', 
+    component: () => import('../views/UserEditView.vue'),
+    meta: { requiresAuth: true }
+  },
+  { 
     path: '/userlist', 
     component: () => import('../views/UserListView.vue'),
     meta: { requiresAuth: true }

@@ -32,6 +32,15 @@ type CreateUserWithPasswordRequest struct {
 	ConfirmPassword string `json:"confirmPassword" validate:"required" example:"password123"` // Only for validation
 }
 
+type UpdateUserRequest struct {
+	Name     string `json:"name,omitempty"`
+	Email    string `json:"email,omitempty"`
+	NIC      string `json:"nic,omitempty"`
+	Address  string `json:"address,omitempty"`
+	Birthday string `json:"birthday,omitempty"` // Handle as string for parsing
+	Gender   string `json:"gender,omitempty"`
+}
+
 // a struct to group all user-related route functions.
 type UserHandler struct {
 	userService *service.UserService
@@ -181,24 +190,9 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	// Handle birthday
 	if birthday := form.Value["birthday"]; len(birthday) > 0 {
 		birthdayStr := birthday[0]
-		var parsedTime time.Time
-		var err error
 
-		// Try parsing different formats (prioritize simple date format)
-		formats := []string{
-			"2006-01-02",               // YYYY-MM-DD (preferred)
-			"2006-01-02T15:04:05.000Z", // ISO with milliseconds
-			"2006-01-02T15:04:05Z",     // ISO without milliseconds
-			time.RFC3339,               // RFC3339 format
-		}
-
-		for _, format := range formats {
-			parsedTime, err = time.Parse(format, birthdayStr)
-			if err == nil {
-				break
-			}
-		}
-
+		// Parse only simple date format (YYYY-MM-DD)
+		parsedTime, err := time.Parse("2006-01-02", birthdayStr)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birthday format. Expected YYYY-MM-DD format"})
 		}
@@ -332,18 +326,19 @@ func (h *UserHandler) GetAllUsersWithPhones(c *fiber.Ctx) error {
 
 // UpdateUser godoc
 // @Summary      Update a user
-// @Description  Update an existing user with optional photo upload (multipart/form-data)
+// @Description  Update an existing user with optional photo upload (multipart/form-data) or JSON data
 // @Tags         Users
-// @Accept       multipart/form-data
+// @Accept       multipart/form-data,json
 // @Produce      json
-// @Param        id        path      string  true   "User ID"
-// @Param        name      formData  string  false  "User's full name"
-// @Param        email     formData  string  false  "User's email address"
-// @Param        nic       formData  string  false  "National ID number"
-// @Param        address   formData  string  false  "User's address"
-// @Param        birthday  formData  string  false  "Birthday in YYYY-MM-DD format (simple date)"
-// @Param        gender    formData  string  false  "Gender (e.g. Male or Female)"
-// @Param        photo     formData  file    false  "User's profile image (jpg/png/gif)"
+// @Param        id        path      string            true   "User ID"
+// @Param        request   body      UpdateUserRequest false  "User update data (JSON)"
+// @Param        name      formData  string            false  "User's full name"
+// @Param        email     formData  string            false  "User's email address"
+// @Param        nic       formData  string            false  "National ID number"
+// @Param        address   formData  string            false  "User's address"
+// @Param        birthday  formData  string            false  "Birthday in YYYY-MM-DD format (simple date)"
+// @Param        gender    formData  string            false  "Gender (e.g. Male or Female)"
+// @Param        photo     formData  file              false  "User's profile image (jpg/png/gif)"
 // @Success      200  {object}  model.User
 // @Failure      400  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
@@ -360,11 +355,65 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	form, err := c.MultipartForm()
 	if err != nil {
 		// Fallback to JSON parsing if not multipart
-		var user model.User
-		if err := c.BodyParser(&user); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		var req UpdateUserRequest
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 		}
+
+		// Get existing user first
+		existingUser, err := h.userService.GetUser(userID)
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		}
+
+		// Create updated user object, keeping existing values for fields not provided
+		var user model.User
 		user.ID = userID
+		user.Password = existingUser.Password // Keep existing password
+
+		if req.Name != "" {
+			user.Name = req.Name
+		} else {
+			user.Name = existingUser.Name
+		}
+
+		if req.Email != "" {
+			user.Email = req.Email
+		} else {
+			user.Email = existingUser.Email
+		}
+
+		if req.NIC != "" {
+			user.NIC = req.NIC
+		} else {
+			user.NIC = existingUser.NIC
+		}
+
+		if req.Address != "" {
+			user.Address = req.Address
+		} else {
+			user.Address = existingUser.Address
+		}
+
+		if req.Gender != "" {
+			user.Gender = req.Gender
+		} else {
+			user.Gender = existingUser.Gender
+		}
+
+		// Handle birthday parsing
+		if req.Birthday != "" {
+			birthday, err := time.Parse("2006-01-02", req.Birthday)
+			if err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birthday format. Use YYYY-MM-DD"})
+			}
+			user.Birthday = birthday
+		} else {
+			user.Birthday = existingUser.Birthday
+		}
+
+		// Keep existing photo
+		user.Photo = existingUser.Photo
 
 		if err := h.userService.UpdateUser(&user); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -403,8 +452,11 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		user.Address = existingUser.Address
 	}
 	if birthday := form.Value["birthday"]; len(birthday) > 0 {
-		if parsedTime, err := time.Parse("2006-01-02T15:04:05.000Z", birthday[0]); err == nil {
+		// Parse only simple date format (YYYY-MM-DD)
+		if parsedTime, err := time.Parse("2006-01-02", birthday[0]); err == nil {
 			user.Birthday = parsedTime
+		} else {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birthday format. Expected YYYY-MM-DD format"})
 		}
 	} else {
 		user.Birthday = existingUser.Birthday

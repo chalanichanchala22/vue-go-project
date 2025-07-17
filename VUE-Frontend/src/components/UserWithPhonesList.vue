@@ -42,9 +42,9 @@
           <router-link :to="`/users/${userWithPhones.user.id}`" class="btn btn-primary">
             View Details
           </router-link>
-          <button @click="edit(userWithPhones.user)" class="btn btn-success">
+          <router-link :to="`/users/${userWithPhones.user.id}/edit`" class="btn btn-success">
             Edit
-          </button>
+          </router-link>
           <button @click="del(userWithPhones.user.id)" class="btn btn-danger">
             Delete
           </button>
